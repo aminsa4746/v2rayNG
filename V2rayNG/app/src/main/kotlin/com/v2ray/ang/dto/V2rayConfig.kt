@@ -74,7 +74,7 @@ data class V2rayConfig(
                                    var response: Response? = null,
                 /*DNS*/
                                    val network: String? = null,
-                                   val address: Any? = null,
+                                   var address: Any? = null,
                                    val port: Int? = null,
                 /*Freedom*/
                                    var domainStrategy: String? = null,
@@ -83,8 +83,9 @@ data class V2rayConfig(
                 /*Loopback*/
                                    val inboundTag: String? = null,
                 /*Wireguard*/
-                                   val secretKey: String? = null,
+                                   var secretKey: String? = null,
                                    val peers: List<WireGuardBean>? = null,
+                                   var reserved: List<Int>? = null,
         ) {
 
             data class VnextBean(var address: String = "",
@@ -292,7 +293,10 @@ data class V2rayConfig(
             }
         }
 
-        data class MuxBean(var enabled: Boolean, var concurrency: Int = 8)
+        data class MuxBean(var enabled: Boolean,
+                           var concurrency: Int = 8,
+                           var xudpConcurrency: Int = 8,
+                           var xudpProxyUDP443: String = "",)
 
         fun getServerAddress(): String? {
             if (protocol.equals(EConfigType.VMESS.name, true)

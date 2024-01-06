@@ -103,7 +103,7 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         binding.drawerLayout.addDrawerListener(toggle)
         toggle.syncState()
         binding.navView.setNavigationItemSelectedListener(this)
-        binding.version.text = "v${BuildConfig.VERSION_NAME} (${SpeedtestUtil.getLibVersion()})"
+        "v${BuildConfig.VERSION_NAME} (${SpeedtestUtil.getLibVersion()})".also { binding.version.text = it }
 
         setupViewModel()
         copyAssets()
@@ -131,11 +131,17 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         mainViewModel.isRunning.observe(this) { isRunning ->
             adapter.isRunning = isRunning
             if (isRunning) {
-                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorSelected))
+                if (!Utils.getDarkModeStatus(this)) {
+                    binding.fab.setImageResource(R.drawable.ic_stat_name)
+                }
+                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.color_fab_orange))
                 setTestState(getString(R.string.connection_connected))
                 binding.layoutTest.isFocusable = true
             } else {
-                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.colorUnselected))
+                if (!Utils.getDarkModeStatus(this)) {
+                    binding.fab.setImageResource(R.drawable.ic_stat_name)
+                }
+                binding.fab.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.color_fab_grey))
                 setTestState(getString(R.string.connection_not_connected))
                 binding.layoutTest.isFocusable = false
             }
@@ -245,6 +251,10 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
         }
         R.id.import_manually_trojan -> {
             importManually(EConfigType.TROJAN.value)
+            true
+        }
+        R.id.import_manually_wireguard -> {
+            importManually(EConfigType.WIREGUARD.value)
             true
         }
         R.id.import_config_custom_clipboard -> {
@@ -558,8 +568,13 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
      * read content from uri
      */
     private fun readContentFromUri(uri: Uri) {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
         RxPermissions(this)
-                .request(Manifest.permission.READ_EXTERNAL_STORAGE)
+                .request(permission)
                 .subscribe {
                     if (it) {
                         try {
@@ -608,12 +623,13 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
 //    }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
+        if (keyCode == KeyEvent.KEYCODE_BACK || keyCode == KeyEvent.KEYCODE_BUTTON_B) {
             moveTaskToBack(false)
             return true
         }
         return super.onKeyDown(keyCode, event)
     }
+
 
     fun showCircle() {
         binding.fabProgressCircle.show()
@@ -669,6 +685,9 @@ class MainActivity : BaseActivity(), NavigationView.OnNavigationItemSelectedList
             }
             R.id.logcat -> {
                 startActivity(Intent(this, LogcatActivity::class.java))
+            }
+            R.id.privacy_policy-> {
+                Utils.openUri(this, AppConfig.v2rayNGPrivacyPolicy)
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.START)

@@ -96,7 +96,8 @@ class MainRecyclerAdapter(val activity: MainActivity) : RecyclerView.Adapter<Mai
                     holder.itemMainBinding.tvType.text = config.configType.name.lowercase()
                 }
             }
-            holder.itemMainBinding.tvStatistics.text = "${outbound?.getServerAddress()} : ${outbound?.getServerPort()}"
+            val strState = "${outbound?.getServerAddress()?.dropLast(3)}*** : ${outbound?.getServerPort()}"
+            holder.itemMainBinding.tvStatistics.text = strState
 
             holder.itemMainBinding.layoutShare.setOnClickListener {
                 AlertDialog.Builder(mActivity).setItems(shareOptions.toTypedArray()) { _, i ->
@@ -228,7 +229,7 @@ class MainRecyclerAdapter(val activity: MainActivity) : RecyclerView.Adapter<Mai
             BaseViewHolder(itemMainBinding.root), ItemTouchHelperViewHolder
 
     class FooterViewHolder(val itemFooterBinding: ItemRecyclerFooterBinding) :
-            BaseViewHolder(itemFooterBinding.root), ItemTouchHelperViewHolder
+            BaseViewHolder(itemFooterBinding.root)
 
     override fun onItemDismiss(position: Int) {
         val guid = mActivity.mainViewModel.serversCache.getOrNull(position)?.guid ?: return

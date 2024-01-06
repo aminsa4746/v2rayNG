@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.OpenableColumns
 import android.util.Log
@@ -48,7 +49,6 @@ class UserAssetActivity : BaseActivity() {
         val view = binding.root
         setContentView(view)
         title = getString(R.string.title_user_asset_setting)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         binding.recyclerView.setHasFixedSize(true)
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -75,7 +75,14 @@ class UserAssetActivity : BaseActivity() {
     }
 
     private fun showFileChooser() {
-        RxPermissions(this).request(Manifest.permission.READ_EXTERNAL_STORAGE).subscribe {
+        val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            Manifest.permission.READ_MEDIA_IMAGES
+        } else {
+            Manifest.permission.READ_EXTERNAL_STORAGE
+        }
+        RxPermissions(this)
+            .request(permission)
+            .subscribe {
             if (it) {
                 val intent = Intent(Intent.ACTION_GET_CONTENT)
                 intent.type = "*/*"
@@ -91,7 +98,8 @@ class UserAssetActivity : BaseActivity() {
                 } catch (ex: android.content.ActivityNotFoundException) {
                     toast(R.string.toast_require_file_manager)
                 }
-            }
+            } else
+                toast(R.string.toast_permission_denied)
         }
     }
 

@@ -4,20 +4,16 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.text.Editable
 import android.util.Base64
-import com.google.zxing.WriterException
-import android.graphics.Bitmap
-import com.google.zxing.BarcodeFormat
-import com.google.zxing.qrcode.QRCodeWriter
-import com.google.zxing.EncodeHintType
 import java.util.*
-import kotlin.collections.HashMap
 import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration.UI_MODE_NIGHT_MASK
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import android.content.res.Configuration.UI_MODE_NIGHT_NO
 import android.net.Uri
 import android.os.Build
 import android.os.LocaleList
+import android.provider.Settings
 import android.util.Log
 import android.util.Patterns
 import android.webkit.URLUtil
@@ -172,36 +168,6 @@ object Utils {
     }
 
     /**
-     * create qrcode using zxing
-     */
-    fun createQRCode(text: String, size: Int = 800): Bitmap? {
-        try {
-            val hints = HashMap<EncodeHintType, String>()
-            hints[EncodeHintType.CHARACTER_SET] = "utf-8"
-            val bitMatrix = QRCodeWriter().encode(text,
-                    BarcodeFormat.QR_CODE, size, size, hints)
-            val pixels = IntArray(size * size)
-            for (y in 0 until size) {
-                for (x in 0 until size) {
-                    if (bitMatrix.get(x, y)) {
-                        pixels[y * size + x] = 0xff000000.toInt()
-                    } else {
-                        pixels[y * size + x] = 0xffffffff.toInt()
-                    }
-
-                }
-            }
-            val bitmap = Bitmap.createBitmap(size, size,
-                    Bitmap.Config.ARGB_8888)
-            bitmap.setPixels(pixels, 0, size, 0, 0, size, size)
-            return bitmap
-        } catch (e: WriterException) {
-            e.printStackTrace()
-            return null
-        }
-    }
-
-    /**
      * is ip address
      */
     fun isIpAddress(value: String): Boolean {
@@ -213,7 +179,7 @@ object Utils {
             //CIDR
             if (addr.indexOf("/") > 0) {
                 val arr = addr.split("/")
-                if (arr.count() == 2 && Integer.parseInt(arr[1]) > 0) {
+                if (arr.count() == 2 && Integer.parseInt(arr[1]) > -1) {
                     addr = arr[0]
                 }
             }
@@ -274,7 +240,7 @@ object Utils {
             if (value != null && Patterns.WEB_URL.matcher(value).matches() || URLUtil.isValidUrl(value)) {
                 return true
             }
-        } catch (e: WriterException) {
+        } catch (e: Exception) {
             e.printStackTrace()
             return false
         }
@@ -352,6 +318,11 @@ object Utils {
         return extDir.absolutePath
     }
 
+    fun getDeviceIdForXUDPBaseKey(): String {
+        val androidId = Settings.Secure.ANDROID_ID.toByteArray(charset("UTF-8"))
+        return Base64.encodeToString(androidId.copyOf(32), Base64.NO_PADDING.or(Base64.URL_SAFE))
+    }
+
     fun getUrlContext(url: String, timeout: Int): String {
         var result: String
         var conn: HttpURLConnection? = null
@@ -391,11 +362,11 @@ object Utils {
 
     fun getDarkModeStatus(context: Context): Boolean {
         val mode = context.resources.configuration.uiMode and UI_MODE_NIGHT_MASK
-        return mode == UI_MODE_NIGHT_YES
+        return mode != UI_MODE_NIGHT_NO
     }
 
     fun getIpv6Address(address: String): String {
-        return if (isIpv6Address(address)) {
+        return if (isIpv6Address(address) && !address.contains('[') && !address.contains(']')) {
             String.format("[%s]", address)
         } else {
             address
@@ -435,5 +406,9 @@ object Utils {
         return URL(url.protocol, IDN.toASCII(url.host, IDN.ALLOW_UNASSIGNED), url.port, url.file)
             .toExternalForm()
     }
+
+    fun isTv(context: Context): Boolean =
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
+
 }
 
